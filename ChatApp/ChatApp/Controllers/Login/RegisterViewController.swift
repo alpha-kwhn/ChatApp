@@ -21,6 +21,9 @@ class RegisterViewController: UIViewController {
         imageView.image = UIImage(systemName: "person")
         imageView.tintColor = .gray
         imageView.contentMode = .scaleAspectFit
+        imageView.layer.masksToBounds = true
+        imageView.layer.borderWidth = 2
+        imageView.layer.borderColor = UIColor.lightGray.cgColor
         return imageView
     }()
     
@@ -138,8 +141,9 @@ class RegisterViewController: UIViewController {
         imageView.addGestureRecognizer(gesture)
     }
     
+    //프사 바꾸기 기능
     @objc private func didTapChangeProfilePic() {
-        print("Change pic called")
+        presentPhotoActionSheet()
     }
     
     
@@ -152,6 +156,9 @@ class RegisterViewController: UIViewController {
                                  y: 20,
                                  width: size,
                                  height: size)
+        
+        imageView.layer.cornerRadius = imageView.width/2.0
+        //프사 둥글게
         
         firstNameField.frame = CGRect(x: 30,
                                   y: imageView.bottom+10,
@@ -231,3 +238,61 @@ extension RegisterViewController: UITextFieldDelegate {
     }
 }
 
+//그림과 대리자를 선택하는 것과 관련된 모든 코드를 확장에 구성하여 정리함
+//사용자가 사진을 찍거나 카메라 롤에서 사진을 선택한 결과를 얻을 수 있도록 함
+extension RegisterViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    func presentPhotoActionSheet() {
+        let actionSheet = UIAlertController(title: "Profile Picture", message: "How would you like to select a picture?", preferredStyle: .actionSheet)
+        
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        //경고 액션 추가
+        
+        actionSheet.addAction(UIAlertAction(title: "Take Photo", style: .default, handler: { [weak self]
+            _ in self?.presentCamera()
+        }))
+        actionSheet.addAction(UIAlertAction(title: "Chose Photo", style: .default, handler: { [weak self] _ in self?.presentPhotoPicker()
+        }))
+        
+        present(actionSheet, animated: true)
+    }
+    
+    func presentCamera() {
+        //uiimagePickerController 소환
+        let vc = UIImagePickerController()
+        vc.sourceType = .camera
+        vc.delegate = self
+        vc.allowsEditing = true
+        //정사각형 모양으로 사진 편집 가능한지 여부
+        //이미지 크기의 표준을 정할 수 있어서 좋음
+        present(vc, animated: true)
+    }
+    
+    func presentPhotoPicker() {
+        let vc = UIImagePickerController()
+        vc.sourceType = .photoLibrary
+        vc.delegate = self
+        vc.allowsEditing = true
+        present(vc, animated: true)
+    }
+    
+    //취소하고 우리가 원하는 다른 하나가 이미지 선택기 -> 사용자가 사진을 찍거나 사진을 선택할 때 호출될 때 호출됨
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        picker.dismiss(animated: true, completion: nil)
+        guard let selectedImage = info[UIImagePickerController.InfoKey.editedImage] as? UIImage else {
+            return
+        }
+        //오류 있을 경우 종료
+        self.imageView.image = selectedImage
+        //사용자가 선택한 잘린 이미지를 제공한다
+        print(info)
+//        let selectedImage
+//
+//        self.imageView.image = selectedImage
+    }
+    
+    
+    //이미지 데이터 선택기 데이터 취소
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true, completion: nil)
+    }
+}
